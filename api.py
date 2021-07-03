@@ -22,12 +22,12 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 class Quest(db.Model):
     quest_id = db.Column(db.Integer, primary_key=True)
-    qid = db.Column(db.String(100), nullable=False)
-    status = db.Column(db.DateTime)
-    submit_time = db.Column(db.String(100), nullable=False)
-    run_time = db.Column(db.Integer)
-    submitter = db.Column(db.DateTime)
-    platform = db.Column(db.String(100), nullable=False)
+    qid = db.Column(db.Integer)
+    status = db.Column(db.String(100))
+    submit_time = db.Column(db.DateTime)
+    run_time = db.Column(db.Float)
+    submitter = db.Column(db.String(50))
+    platform = db.Column(db.String(100))
     
     def __init__(self, qid, status, submit_time, run_time, submitter, platform ):
         self.qid = qid
@@ -42,8 +42,8 @@ class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.String)
     user_name = db.Column(db.String(20), nullable=False)
-    ac = db.Column(db.String(100), nullable=False)
-    total = db.Column(db.String)
+    ac = db.Column(db.Integer)
+    total = db.Column(db.Integer)
 
     def __init__(self, user_name, uid, ac, total):
         self.user_name = user_name
@@ -208,25 +208,6 @@ def user_delete(id):
     db.session.commit()
 
     return {'message': 'successfully delete user'}, 200
-
-
-@app.route('/reserve', methods=["POST"])
-def reserve(**kwargs):
-    current_user = kwargs['user']
-    user = User.query.filter_by(uid=current_user)
-    quest_id = int(request.values["quest_id"])
-
-    #success = reserve_activity(quest_id)
-    success = True
-    
-    if success:
-        quests = json.loads(getattr(user, 'quests'))
-        quests.append(quest_id)
-        setattr(user, 'quests', json.dumps(quests))
-        db.session.commit()
-        return {'message': 'reserve successful'},200
-    else:
-        return {'message': 'reserve failed'},500
 
 
 
