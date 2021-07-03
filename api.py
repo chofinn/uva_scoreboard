@@ -212,5 +212,5 @@ def user_delete(id):
 
 
 if __name__ == '__main__':
-    app.run(debug = True, host="0.0.0.0", port=20002)
-    app.run(debug=True)
+    app.run(debug = True, host="0.0.0.0", port=8080)
+    # app.run(debug=True)
