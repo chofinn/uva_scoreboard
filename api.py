@@ -212,7 +212,9 @@ def add_user():
         else:
             col_values.append(None)
     new_user = User(*col_values)
-    
+    ac, total = get_info(getattr(new_user, 'uid'))
+    setattr(new_user, 'ac', ac)
+    setattr(new_user, 'total', total)
     db.session.add(new_user)
     db.session.commit()
 
@@ -269,6 +271,7 @@ def fetch_data():
     setattr(user, 'total', total)
     db.session.commit()
 
+    return {'message': 'successfully update user'}, 200
 
 if __name__ == '__main__':
     app.run(debug = True, host="0.0.0.0", port=8080)
