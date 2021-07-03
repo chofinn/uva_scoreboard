@@ -271,7 +271,8 @@ def fetch_data():
     setattr(user, 'total', total)
     db.session.commit()
 
+    return {'message': 'successfully update user'}, 200
 
 if __name__ == '__main__':
     app.run(debug = True, host="0.0.0.0", port=8080)
-    # app.run(debug=True)
+    #app.run(debug=True)
