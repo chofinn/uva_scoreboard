@@ -3,11 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import os
 from flask_cors import CORS
-#from fbauth import check_token
 import re
-#from flask_mail import Mail, Message
 import json
-
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -19,8 +17,9 @@ CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 
-
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#           Tables          #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 class Quest(db.Model):
     quest_id = db.Column(db.Integer, primary_key=True)
     qid = db.Column(db.String(100), nullable=False)
@@ -30,7 +29,6 @@ class Quest(db.Model):
     submitter = db.Column(db.DateTime)
     platform = db.Column(db.String(100), nullable=False)
     
-    
     def __init__(self, qid, status, submit_time, run_time, submitter, platform ):
         self.qid = qid
         self.status = status
@@ -38,6 +36,7 @@ class Quest(db.Model):
         self.run_time = run_time
         self.submitter = submitter
         self.platform  = platform 
+
 
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
@@ -53,6 +52,9 @@ class User(db.Model):
         self.total = total
 
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#           Schemas          #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 class QuestSchema(ma.Schema):
     class Meta:
         # Fields to expose
@@ -77,12 +79,12 @@ users_schema = UserSchema(many=True)
 @app.route("/quest", methods=["POST"])
 #@check_token
 def add_quest():
-    columns = ['quest_id', 'quest_name', 'quest_time', 'quest_place', 'quest_duration', 'end_reservation_date', 'info_url', 'tags']
+    columns = ['qid', 'status', 'submit_time', 'run_time', 'submitter', 'platform']
     col_values = []
     for c in columns:
         if c in request.values:
-            if c in ['quest_time', 'end_reservation_date']:
-                col_values.append(toDtObject(request.values[c]))
+            if c in ['submit_time']:
+                col_values.append(datetime.strptime(request.values[c], "%Y-%m-%d %H:%M"))
             else:
                 col_values.append(request.values[c])
         else:
@@ -118,11 +120,11 @@ def quest_detail(id):
 #@check_token
 def quest_update(id):
     quest = Quest.query.get(id)
-    columns = ['quest_id', 'quest_name', 'quest_time', 'quest_place', 'quest_duration', 'end_reservation_date', 'info_url', 'tags']
+    columns = ['qid', 'status', 'submit_time', 'run_time', 'submitter', 'platform']
     for c in columns:
         if c in request.values:
-            if c in ['quest_time', 'end_reservation_date']:
-                setattr(quest, c, toDtObject(request.values[c]))
+            if c in ['submit_time']:
+                setattr(quest, c, datetime.strptime(request.values[c], "%Y-%m-%d %H:%M"))
             else:
                 setattr(quest, c, request.values[c])
             
@@ -144,29 +146,6 @@ def quest_delete(id):
     # return quest_schema.jsonify(quest)
     return {'message': 'successfully delete quest'}, 200
 
-# endpoint to get quest for certain user
-@app.route("/user_quests", methods=["GET"])
-def user_quests(**kwargs):
-    current_user = kwargs['user']
-    user = User.query.filter_by(uid=current_user)
-    
-    all_quests = Quest.query.all()
-    reserved_quests = json.loads(getattr(user, 'quests'))
-    reservation = {}
-    for e in all_quests:
-        if getattr(e, 'quest_id') in reserved_quests:
-            reservation[getattr(e, 'quest_id')] = True
-        else:
-            reservation[getattr(e, 'quest_id')] = False
-
-    result = quests_schema.dump(all_quests)
-
-    for t in result:
-        t['is_reserved'] = reservation[t['quest_id']]
-
-    result_json = user_quests_schema.jsonify(result)
-
-    return result_json
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #          user CRUD             #
@@ -174,15 +153,13 @@ def user_quests(**kwargs):
 # endpoint to create new user
 @app.route("/user", methods=["POST"])
 def add_user():
-    columns = ['user_name', 'uid']
+    columns = ['user_name', 'uid', 'ac', 'total']
     col_values = []
     for c in columns:
         if c in request.values:
             col_values.append(request.values[c])
         else:
             col_values.append(None)
-    col_values.append(encrypt_pw(request.values['user_pw']))
-    col_values.append('[]')
     new_user = User(*col_values)
     
     db.session.add(new_user)
@@ -213,7 +190,7 @@ def user_detail(id):
 @app.route("/user/<id>", methods=["PUT"])
 def user_update(id):
     user = User.query.get(id)
-    columns = ['user_name', 'uid', 'user_pw', 'quests']
+    columns = ['user_name', 'uid', 'ac', 'total']
     for c in columns:
         if c in request.values:
             setattr(user, c, request.values[c])
@@ -251,23 +228,7 @@ def reserve(**kwargs):
     else:
         return {'message': 'reserve failed'},500
 
-@app.route('/cancel', methods=["POST"])
-def cancel(**kwargs):
-    current_user = kwargs['user']
-    user = User.query.filter_by(uid=current_user)
-    quest_id = int(request.values["quest_id"])
 
-    #success = cancel_activity(quest_id)
-    success = True
-    
-    if success:
-        quests = json.loads(getattr(user, 'quests'))
-        quests.remove(quest_id)
-        setattr(user, 'quests', json.dumps(quests))
-        db.session.commit()
-        return {'message': 'cancel successful'},200
-    else:
-        return {'message': 'cancel failed'},500
 
 if __name__ == '__main__':
     app.run(debug = True, host="0.0.0.0", port=20002)
