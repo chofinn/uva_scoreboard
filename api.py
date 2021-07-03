@@ -83,7 +83,7 @@ class Quest(db.Model):
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.String)
-    user_name = db.Column(db.String(20), nullable=False)
+    user_name = db.Column(db.String(20))
     ac = db.Column(db.Integer)
     total = db.Column(db.Integer)
 
@@ -271,5 +271,5 @@ def fetch_data():
 
 
 if __name__ == '__main__':
-    #app.run(debug = True, host="0.0.0.0", port=20002)
+    # app.run(debug = True, host="0.0.0.0", port=8080)
     app.run(debug=True)
