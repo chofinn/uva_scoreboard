@@ -70,7 +70,7 @@ class Quest(db.Model):
     submitter = db.Column(db.String(50))
     platform = db.Column(db.String(100))
     
-    def __init__(self, qid, quest_name, status, submit_time, run_time, submitter, platform ):
+    def __init__(self, qid, quest_name, status, submit_time, run_time, submitter, platform):
         self.qid = qid
         self.quest_name = quest_name
         self.status = status
@@ -121,12 +121,12 @@ users_schema = UserSchema(many=True)
 @app.route("/quest", methods=["POST"])
 #@check_token
 def add_quest():
-    columns = ['qid', 'status', 'submit_time', 'run_time', 'submitter', 'platform']
+    columns = ['qid', 'quest_name', 'status', 'submit_time', 'run_time', 'submitter', 'platform']
     col_values = []
     for c in columns:
         if c in request.values:
             if c in ['submit_time']:
-                col_values.append(datetime.strptime(request.values[c], "%Y-%m-%d %H:%M"))
+                col_values.append(datetime.utcfromtimestamp(int(request.values[c])))
             else:
                 col_values.append(request.values[c])
         else:
@@ -162,11 +162,11 @@ def quest_detail(id):
 #@check_token
 def quest_update(id):
     quest = Quest.query.get(id)
-    columns = ['qid', 'status', 'submit_time', 'run_time', 'submitter', 'platform']
+    columns = ['qid', 'quest_name', 'status', 'submit_time', 'run_time', 'submitter', 'platform']
     for c in columns:
         if c in request.values:
             if c in ['submit_time']:
-                setattr(quest, c, datetime.strptime(request.values[c], "%Y-%m-%d %H:%M"))
+                setattr(quest, c, datetime.utcfromtimestamp(int(request.values[c])))
             else:
                 setattr(quest, c, request.values[c])
             
@@ -187,6 +187,15 @@ def quest_delete(id):
 
     # return quest_schema.jsonify(quest)
     return {'message': 'successfully delete quest'}, 200
+
+@app.route("/get_user_quest/<name>", methods=["GET"])
+def get_user_quest(name):
+    quests = Quest.query.filter_by(submitter=name)
+    result = quests_schema.dump(quests)
+
+    result_json = quests_schema.jsonify(result)
+
+    return result_json
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -251,7 +260,7 @@ def user_delete(id):
 
     return {'message': 'successfully delete user'}, 200
 
-@app.route("fetch_data", methods=["POST"])
+@app.route("/fetch_data", methods=["POST"])
 def fetch_data():
     name = request.values['user_name']
     user = User.query.filter_by(uid=name).first()
@@ -259,6 +268,7 @@ def fetch_data():
     setattr(user, 'ac', ac)
     setattr(user, 'total', total)
     db.session.commit()
+
 
 if __name__ == '__main__':
     #app.run(debug = True, host="0.0.0.0", port=20002)
