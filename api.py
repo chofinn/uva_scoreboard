@@ -212,7 +212,9 @@ def add_user():
         else:
             col_values.append(None)
     new_user = User(*col_values)
-    
+    ac, total = get_info(getattr(new_user, 'uid'))
+    setattr(new_user, 'ac', ac)
+    setattr(new_user, 'total', total)
     db.session.add(new_user)
     db.session.commit()
 
